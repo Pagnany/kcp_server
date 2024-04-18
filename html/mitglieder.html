@@ -1,0 +1,22 @@
+<html>
+<head>
+    <title>Unsere Mitglieder</title>
+</head>
+<body>
+	<h1>Unsere Mitglieder</h1>
+	<table>
+		<tr>
+			<th>ID</th>
+			<th>Vorname</th>
+			<th>Nachname</th>
+		</tr>
+		{{range .}}
+			<tr>
+				<td>{{.Id}}</td>
+				<td>{{.Vname}}</td>
+				<td>{{.Name}}</td>
+			</tr>
+		{{end}}
+	</table>
+</body>
+</html>
