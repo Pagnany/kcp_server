@@ -36,15 +36,14 @@ func strafen(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 }
 
 func main() {
-	// connect_db()
-
 	router := httprouter.New()
 	router.GET("/", home)
 	router.GET("/mitglieder", mitglieder)
 	router.GET("/strafen", strafen)
 
-	log.Fatal(http.ListenAndServe(":8080", router))
+	log.Fatal(http.ListenAndServe("localhost:8080", router))
 }
+
 func get_mitglieder() []Mitglied {
 	// Capture connection properties.
 	cfg := mysql.Config{
@@ -69,6 +68,7 @@ func get_mitglieder() []Mitglied {
 		log.Fatal(err)
 	}
 	defer rows.Close()
+
 	mg := []Mitglied{}
 	for rows.Next() {
 		var id int
