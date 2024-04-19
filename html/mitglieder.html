@@ -5,15 +5,17 @@
 <body>
 	<h1>Unsere Mitglieder</h1>
 	<table>
-		<tr>
+		<tr >
 			<th>ID</th>
 			<th>Vorname</th>
+			<th>Spitzname</th>
 			<th>Nachname</th>
 		</tr>
 		{{range .}}
 			<tr>
 				<td>{{.Id}}</td>
 				<td>{{.Vname}}</td>
+				<td>{{.Nickname}}</td>
 				<td>{{.Name}}</td>
 			</tr>
 		{{end}}

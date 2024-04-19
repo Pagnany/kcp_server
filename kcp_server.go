@@ -35,11 +35,16 @@ func strafen(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	fmt.Fprintf(w, "Strafen")
 }
 
+func clicked(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	fmt.Fprintf(w, "you clicked")
+}
+
 func main() {
 	router := httprouter.New()
 	router.GET("/", home)
 	router.GET("/mitglieder", mitglieder)
 	router.GET("/strafen", strafen)
+	router.GET("/clicked", clicked)
 
 	log.Fatal(http.ListenAndServe("localhost:8080", router))
 }

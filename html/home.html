@@ -1,11 +1,18 @@
 <html>
 	<head>
 		<title>Kegelclub Pegelbrüder</title>
+		<script src="https://unpkg.com/htmx.org@1.9.12"></script>
 	</head>
 	<body>
-		<h1>Willkommen bei den Pegelbrüdern</h1>
-		<a href="/mitglieder">Mitglieder</a>
-		<br>
-		<a href="/strafen">Strafen</a>
+		<div style="text-align:center;">
+			<h1>Willkommen bei den Pegelbrüdern</h1>
+			<a href="/mitglieder">Mitglieder</a>
+			<br>
+			<a href="/strafen">Strafen</a>
+			<br>
+			<button hx-get="/clicked" hx-swap="outerHTML">
+				Click Me
+			</button>
+		</div>
 	</body>
 </html>
