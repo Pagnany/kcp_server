@@ -1,0 +1,30 @@
+<html>
+<head>
+	<title>Strafen</title>
+	<script src="https://unpkg.com/htmx.org@1.9.12"></script>
+</head>
+	<body>
+		<h1>Strafen</h1>
+		<form hx-post="/strafenzeitraum" hx-swap="innerHTML" hx-target="#strafen">
+			<input type="text" id="von_datum" name="von_datum" placeholder="von Datum">
+			<input type="text" id="bis_datum" name="bis_datum" placeholder="bis Datum">
+			<button>
+				Strafen anzeigen
+			</button>
+		</form>
+		<div id="strafen"></div>
+		<h2>Veranstaltungen</h2>
+		<table>
+			<tr>
+				<th>Datum</th>
+				<th>Bezeichnung</th>
+			</tr>
+			{{range .}}
+				<tr>
+					<td>{{.Datum}}</td>
+					<td>{{.Bezeichnung}}</td>
+				</tr>
+			{{end}}
+		</table>
+	</body>
+</html>
