@@ -1,0 +1,34 @@
+<html>
+<head>
+    <title>Strafen Typ erstellen</title>
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+</head>
+<body>
+    <h1>Strafen Typ erstellen</h1>
+	<form hx-post="/strafen/erstellen_typ">
+		<input type="text" id="bezeichnung" name="bezeichnung" placeholder="Bezeichnung">
+		<input type="number" step=".01" id="preis" name="preis" placeholder="Preis">
+		<button>
+			Strafe erstellen
+		</button>
+	</form>
+	<div id="strafen_typen">
+		<table>
+			<tr>
+				<th>Id</th>
+				<th>Bezeichnung</th>
+				<th>Preis</th>
+				<th>Aktiv</th>
+			</tr>
+			{{range .}}
+				<tr>
+					<td>{{.Id}}</td>
+					<td>{{.Bezeichnung}}</td>
+					<td>{{.Preis}}</td>
+					<td>{{.Aktiv}}</td>
+				</tr>
+			{{end}}
+		</table>
+	</div>
+</body>
+</html>
