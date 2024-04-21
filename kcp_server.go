@@ -48,6 +48,12 @@ type Page_date_strafen struct {
 	Strafen         []Strafe
 }
 
+type Page_data_mitglieder struct {
+	Mitglieder      []Mitglied
+	Strafen_typen   []Strafe_typ
+	Veranstaltungen []Veranstaltung
+}
+
 func home(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	tmpl := template.Must(template.ParseFiles("html/home.html"))
 	tmpl.Execute(w, nil)
@@ -99,8 +105,29 @@ func strafen_erstellen_typ_post(w http.ResponseWriter, r *http.Request, _ httpro
 }
 
 func strafen_erstellen_mitglied(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	data := Page_data_mitglieder{get_mitglieder(), get_strafen_typen(), get_veranstaltungen()}
 	tmpl := template.Must(template.ParseFiles("html/strafen_erstellen_mitglied.html"))
-	tmpl.Execute(w, nil)
+	tmpl.Execute(w, data)
+}
+func strafen_erstellen_mitglied_post(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	r.ParseForm()
+	id_mitglied := r.PostFormValue("mitglieder")
+	id_strafe_typ := r.PostFormValue("strafe")
+	preis := r.PostFormValue("preis")
+	datum := r.PostFormValue("datum")
+	anzahl := r.PostFormValue("anzahl")
+	id_veranstaltung := r.PostFormValue("veranstaltungen")
+	fmt.Fprintf(w, "ID: %s, Strafe: %s, Preis: %s, Datum: %s, Anzahl: %s, Veranstaltung: %s<br>", id_mitglied, id_strafe_typ, preis, datum, anzahl, id_veranstaltung)
+	// connect_to_db()
+	// stmt, err := db.Prepare("INSERT INTO strafen (id_strafe_typ, id_mitglied, preis, datum, anzahl, id_veranstaltung) VALUES (?, ?, ?, ?, ?, ?)")
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// _, err = stmt.Exec(id_strafe_typ, id_mitglied, preis, datum, anzahl, id_veranstaltung)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// db.Close()
 }
 
 func main() {
@@ -111,6 +138,7 @@ func main() {
 	router.GET("/strafen/erstellen_typ", strafen_erstellen_typ)
 	router.POST("/strafen/erstellen_typ", strafen_erstellen_typ_post)
 	router.GET("/strafen/erstellen_mitglied", strafen_erstellen_mitglied)
+	router.POST("/strafen/erstellen_mitglied", strafen_erstellen_mitglied_post)
 	router.POST("/strafen/zeitraum", strafenzeitraum)
 
 	log.Fatal(http.ListenAndServe("localhost:8080", router))
