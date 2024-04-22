@@ -6,45 +6,45 @@
 	<body>
 		<h1>Strafen Mitglied erstellen</h1>
 		<form>
-		<label for="veranstaltungen">Veranstaltungen:</label>
-		<select name="veranstaltungen" id="veranstaltungen">
-			<option value="0">Keine Veranstaltung</option>
-			{{range .Veranstaltungen}}
-				<option value="{{.Id}}">{{.Datum}} {{.Bezeichnung}}</option>
-			{{end}}
-		</select>
-		<br>	
-		<br>	
-		<label for="datum">Datum:</label>
-		<input type="date" id="datum" name="datum">
-		<br>
-		<br>
-		<label for="mitglieder">Name:</label>
-		<select name="mitglieder" id="mitglieder">
-			{{range .Mitglieder}}
-				<option value="{{.Id}}">{{.Vname}} {{.Name}}</option>
-			{{end}}
-		</select>
-		<br>	
-		<br>	
-		<label for="strafe">Strafe:</label>
-		<select name="strafe" id="strafe">
-			<option value="0">!Geldbetrag</option>
-			{{range .Strafen_typen}}
-				<option value="{{.Id}}">{{.Bezeichnung}} | {{.Preis}}€</option>
-			{{end}}
-		</select>
-		<br>
-		<br>
-		<label for="anzahl">Anzahl:</label>
-		<input type="number" id="anzahl" name="anzahl" value="1" step=".01">
-		<br>
-		<br>
-		<label for="preis">Preis:</label>
-		<input type="number" id="preis" name="preis" value="1" step=".01">
-		<br>
-		<br>
-		<button hx-post="/strafen/erstellen_mitglied" hx-trigger="click" hx-target="#antwort" hx-swap="innerHTML">Strafe erstellen</button>
+			<label for="veranstaltungen">Veranstaltungen:</label>
+			<select name="veranstaltungen" id="veranstaltungen">
+				<option value="0">Keine Veranstaltung</option>
+				{{range .Veranstaltungen}}
+					<option value="{{.Id}}">{{.Datum}} {{.Bezeichnung}}</option>
+				{{end}}
+			</select>
+			<br>	
+			<br>	
+			<label for="datum">Datum:</label>
+			<input type="date" id="datum" name="datum">
+			<br>
+			<br>
+			<label for="mitglieder">Name:</label>
+			<select name="mitglieder" id="mitglieder">
+				{{range .Mitglieder}}
+					<option value="{{.Id}}">{{.Vname}} {{.Name}}</option>
+				{{end}}
+			</select>
+			<br>	
+			<br>	
+			<label for="strafe">Strafe:</label>
+			<select name="strafe" id="strafe">
+				<option value="0">!Geldbetrag</option>
+				{{range .Strafen_typen}}
+					<option value="{{.Id}}">{{.Bezeichnung}} | {{.Preis}}€</option>
+				{{end}}
+			</select>
+			<br>
+			<br>
+			<label for="preis">Preis:</label>
+			<input type="number" id="preis" name="preis" value="1" step=".01">
+			<br>
+			<br>
+			<label for="anzahl">Anzahl:</label>
+			<input type="number" id="anzahl" name="anzahl" value="1" step="1">
+			<br>
+			<br>
+			<button hx-post="/strafen/erstellen_mitglied" hx-trigger="click" hx-target="#antwort" hx-swap="afterbegin">Strafe erstellen</button>
 		</form>
 		<div id="antwort"></div>
 	</body>

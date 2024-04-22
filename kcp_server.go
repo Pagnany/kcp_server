@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"text/template"
 
 	"github.com/go-sql-driver/mysql"
@@ -117,17 +118,58 @@ func strafen_erstellen_mitglied_post(w http.ResponseWriter, r *http.Request, _ h
 	datum := r.PostFormValue("datum")
 	anzahl := r.PostFormValue("anzahl")
 	id_veranstaltung := r.PostFormValue("veranstaltungen")
-	fmt.Fprintf(w, "ID: %s, Strafe: %s, Preis: %s, Datum: %s, Anzahl: %s, Veranstaltung: %s<br>", id_mitglied, id_strafe_typ, preis, datum, anzahl, id_veranstaltung)
-	// connect_to_db()
-	// stmt, err := db.Prepare("INSERT INTO strafen (id_strafe_typ, id_mitglied, preis, datum, anzahl, id_veranstaltung) VALUES (?, ?, ?, ?, ?, ?)")
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// _, err = stmt.Exec(id_strafe_typ, id_mitglied, preis, datum, anzahl, id_veranstaltung)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// db.Close()
+
+	//Abbrechen wenn keine Veranstaltung und kein Datum gesetzt ist
+	if id_veranstaltung == "0" && datum == "" {
+		fmt.Fprintf(w, "FEHLER: Keine Veranstaltung und kein Datum gesetzt<br>")
+		return
+	}
+	//Abbrechen wenn keine Strafe und Preis	0 ist
+	if id_strafe_typ == "0" && preis == "0" {
+		fmt.Fprintf(w, "FEHLER: Keine Strafe und Preis 0 gesetzt<br>")
+		return
+	}
+	//Abbrechen wenn Anzahl 0 ist
+	if anzahl == "0" {
+		fmt.Fprintf(w, "FEHLER: Anzahl 0 gesetzt<br>")
+		return
+	}
+	// Abbrechen wenn kein Mitglied gesetzt ist
+	if id_mitglied == "0" {
+		fmt.Fprintf(w, "FEHLER: Kein Mitglied gesetzt<br>")
+		return
+	}
+
+	// Wenn eine Strafe gesetzt ist, dann brauchen wir keinen Preis
+	temp, err := strconv.Atoi(id_strafe_typ)
+	if err == nil {
+		if temp > 0 {
+			preis = "0"
+		}
+	}
+
+	fmt.Fprintf(w, "Mitglied_ID: %s, Strafe_ID: %s, Preis: %s, Datum: %s, Anzahl: %s, Veranstaltung_ID: %s<br>", id_mitglied, id_strafe_typ, preis, datum, anzahl, id_veranstaltung)
+
+	connect_to_db()
+	stmt, err := db.Prepare("INSERT INTO strafen (id_strafe_typ, id_mitglied, preis, datum, anzahl, id_veranstaltung) VALUES (?, ?, ?, ?, ?, ?)")
+	if err != nil {
+		log.Fatal(err)
+	}
+	_, err = stmt.Exec(id_strafe_typ, id_mitglied, preis, NewNullString(datum), anzahl, id_veranstaltung)
+	if err != nil {
+		log.Fatal(err)
+	}
+	db.Close()
+}
+
+func NewNullString(s string) sql.NullString {
+	if len(s) == 0 {
+		return sql.NullString{}
+	}
+	return sql.NullString{
+		String: s,
+		Valid:  true,
+	}
 }
 
 func main() {
