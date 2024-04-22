@@ -55,9 +55,28 @@ type Page_data_mitglieder struct {
 	Veranstaltungen []Veranstaltung
 }
 
+func main() {
+	router := httprouter.New()
+	router.GET("/", home)
+	router.GET("/mitglieder", mitglieder)
+	router.GET("/strafen", strafen)
+	router.GET("/strafen/erstellen_typ", strafen_erstellen_typ)
+	router.POST("/strafen/erstellen_typ", strafen_erstellen_typ_post)
+	router.GET("/strafen/erstellen_mitglied", strafen_erstellen_mitglied)
+	router.POST("/strafen/erstellen_mitglied", strafen_erstellen_mitglied_post)
+	router.POST("/strafen/zeitraum", strafenzeitraum)
+	router.GET("/strafen/veranstaltung", strafen_veranstaltung)
+	log.Fatal(http.ListenAndServe("localhost:8080", router))
+}
+
 func home(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	tmpl := template.Must(template.ParseFiles("html/home.html"))
 	tmpl.Execute(w, nil)
+}
+
+func strafen_veranstaltung(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	temp := create_strafen_grid(1)
+	fmt.Fprintf(w, temp)
 }
 
 func mitglieder(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -110,6 +129,7 @@ func strafen_erstellen_mitglied(w http.ResponseWriter, r *http.Request, _ httpro
 	tmpl := template.Must(template.ParseFiles("html/strafen_erstellen_mitglied.html"))
 	tmpl.Execute(w, data)
 }
+
 func strafen_erstellen_mitglied_post(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	r.ParseForm()
 	id_mitglied := r.PostFormValue("mitglieder")
@@ -172,18 +192,114 @@ func NewNullString(s string) sql.NullString {
 	}
 }
 
-func main() {
-	router := httprouter.New()
-	router.GET("/", home)
-	router.GET("/mitglieder", mitglieder)
-	router.GET("/strafen", strafen)
-	router.GET("/strafen/erstellen_typ", strafen_erstellen_typ)
-	router.POST("/strafen/erstellen_typ", strafen_erstellen_typ_post)
-	router.GET("/strafen/erstellen_mitglied", strafen_erstellen_mitglied)
-	router.POST("/strafen/erstellen_mitglied", strafen_erstellen_mitglied_post)
-	router.POST("/strafen/zeitraum", strafenzeitraum)
+func get_strafen_typ_fuer_veranstaltung(id_veranstaltung int) []Strafe_typ {
+	connect_to_db()
+	var strafen []Strafe_typ
+	rows, err := db.Query("SELECT * FROM strafen_typ WHERE id IN (SELECT id_strafe_typ FROM strafen WHERE id_veranstaltung = ?)", id_veranstaltung)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var id int
+		var bezeichnung string
+		var preis float32
+		var aktiv bool
+		err := rows.Scan(&id, &bezeichnung, &preis, &aktiv)
+		if err != nil {
+			log.Fatal(err)
+		}
+		strafen = append(strafen, Strafe_typ{id, bezeichnung, preis, aktiv})
+	}
+	db.Close()
+	return strafen
+}
 
-	log.Fatal(http.ListenAndServe("localhost:8080", router))
+func get_mitglieder_fuer_veranstaltung(id_veranstaltung int) []Mitglied {
+	connect_to_db()
+	var mitglieder []Mitglied
+	rows, err := db.Query("SELECT * FROM mitglieder WHERE id IN (SELECT id_mitglied FROM strafen WHERE id_veranstaltung = ?)", id_veranstaltung)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var id int
+		var name string
+		var vname string
+		var nickname string
+		err := rows.Scan(&id, &name, &vname, &nickname)
+		if err != nil {
+			log.Fatal(err)
+		}
+		mitglieder = append(mitglieder, Mitglied{id, name, vname, nickname})
+	}
+	db.Close()
+	return mitglieder
+}
+
+func get_strafen_fuer_veranstaltung(id_veranstaltung int) []Strafe {
+	connect_to_db()
+	strafen := []Strafe{}
+	rows, err := db.Query("SELECT * FROM strafen WHERE id_veranstaltung = ?", id_veranstaltung)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var id int
+		var id_strafe_typ int
+		var id_mitglied int
+		var id_veranstaltung int
+		var datum sql.NullString
+		var preis float32
+		var anzahl float32
+		err := rows.Scan(&id, &id_strafe_typ, &id_mitglied, &preis, &datum, &anzahl, &id_veranstaltung)
+		if err != nil {
+			log.Fatal(err)
+		}
+		if datum.Valid {
+			strafen = append(strafen, Strafe{id, id_strafe_typ, id_mitglied, preis, datum.String, anzahl, id_veranstaltung})
+		} else {
+			strafen = append(strafen, Strafe{id, id_strafe_typ, id_mitglied, preis, "", anzahl, id_veranstaltung})
+		}
+	}
+	db.Close()
+	return strafen
+}
+
+func create_strafen_grid(id_veranstaltung int) string {
+	strafen := get_strafen_fuer_veranstaltung(id_veranstaltung)
+	strafen_typen := get_strafen_typ_fuer_veranstaltung(id_veranstaltung)
+	mitglieder := get_mitglieder_fuer_veranstaltung(id_veranstaltung)
+
+	// Überschriften erstellen
+	grid := "<table border='1'><tr><th>Mitglied</th>"
+	for _, strafe := range strafen_typen {
+		temp := strconv.FormatFloat(float64(strafe.Preis), 'f', 2, 32)
+		grid += "<th> " + strafe.Bezeichnung + " " + temp + "€ </th>"
+	}
+	grid += "</tr>"
+	// Zeilen erstellen
+	for _, mitglied := range mitglieder {
+		grid += "<tr><td>" + mitglied.Name + "</td>"
+		for _, strafe_typ := range strafen_typen {
+			foud := false
+			for _, strafe := range strafen {
+				if strafe.Id_mitglied == mitglied.Id && strafe.Id_strafe_typ == strafe_typ.Id {
+					grid += "<td>" + strconv.FormatFloat(float64(strafe.Anzahl), 'f', 2, 32) + "</td>"
+					foud = true
+				}
+			}
+			if !foud {
+				grid += "<td>0</td>"
+			}
+		}
+		grid += "</tr>"
+	}
+
+	grid += "</table>"
+	return grid
 }
 
 func connect_to_db() {
