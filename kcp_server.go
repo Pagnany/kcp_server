@@ -60,6 +60,8 @@ func main() {
 	router.GET("/", home)
 	router.GET("/mitglieder", mitglieder)
 	router.GET("/strafen", strafen)
+	router.GET("/veranstaltungen", veranstaltungen)
+	router.POST("/veranstaltungen/zeitraum", veranstaltungen_zeitraum_post)
 	router.GET("/strafen/erstellen_typ", strafen_erstellen_typ)
 	router.POST("/strafen/erstellen_typ", strafen_erstellen_typ_post)
 	router.GET("/strafen/erstellen_mitglied", strafen_erstellen_mitglied)
@@ -72,6 +74,21 @@ func main() {
 func home(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	tmpl := template.Must(template.ParseFiles("html/home.html"))
 	tmpl.Execute(w, nil)
+}
+
+func veranstaltungen(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	tmpl := template.Must(template.ParseFiles("html/veranstaltungen.html"))
+	tmpl.Execute(w, nil)
+}
+
+func veranstaltungen_zeitraum_post(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	r.ParseForm()
+	von_datum := r.PostFormValue("von_datum")
+	bis_datum := r.PostFormValue("bis_datum")
+	data := get_veranstaltungen_zeitraum(von_datum, bis_datum)
+	for _, veranstaltung := range data {
+		fmt.Fprintf(w, " %s | %s<br>", veranstaltung.Datum, veranstaltung.Bezeichnung)
+	}
 }
 
 func strafen_veranstaltung(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -349,6 +366,29 @@ func get_mitglieder() []Mitglied {
 func get_veranstaltungen() []Veranstaltung {
 	connect_to_db()
 	rows, err := db.Query("SELECT * FROM veranstaltungen")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+
+	vers := []Veranstaltung{}
+	for rows.Next() {
+		var id int
+		var bezeichnung string
+		var datum string
+		err := rows.Scan(&id, &bezeichnung, &datum)
+		if err != nil {
+			log.Fatal(err)
+		}
+		vers = append(vers, Veranstaltung{id, bezeichnung, datum})
+	}
+	db.Close()
+	return vers
+}
+
+func get_veranstaltungen_zeitraum(von_datum string, bis_datum string) []Veranstaltung {
+	connect_to_db()
+	rows, err := db.Query("SELECT * FROM veranstaltungen WHERE datum BETWEEN ? AND ? ORDER BY datum DESC", von_datum, bis_datum)
 	if err != nil {
 		log.Fatal(err)
 	}

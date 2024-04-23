@@ -1,0 +1,18 @@
+<html>
+	<head>
+	    <title>Veranstaltungen</title>
+	    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+	</head>
+	<body>
+	    <p>Veranstaltungen</p>
+		<form hx-post="/veranstaltungen/zeitraum" hx-swap="innerHTML" hx-target="#veranstaltungen">
+		    <input type="date" id="von_datum" name="von_datum" placeholder="von Datum">
+		    <input type="date" id="bis_datum" name="bis_datum" placeholder="bis Datum">
+		    <br>
+		    <button>
+			Veranstaltungen anzeigen
+		    </button>
+		</form>
+	    <div id="veranstaltungen"></div>
+	</body>
+</html>
