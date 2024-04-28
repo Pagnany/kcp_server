@@ -59,6 +59,7 @@ func main() {
 	router := httprouter.New()
 	router.GET("/", home)
 	router.GET("/mitglieder", mitglieder)
+	router.POST("/mitglieder/erstellen", mitglieder_erstellen)
 	router.GET("/strafen", strafen)
 	router.GET("/veranstaltungen", veranstaltungen)
 	router.POST("/veranstaltungen/zeitraum", veranstaltungen_zeitraum_post)
@@ -68,6 +69,7 @@ func main() {
 	router.POST("/strafen/erstellen_mitglied", strafen_erstellen_mitglied_post)
 	router.POST("/strafen/zeitraum", strafenzeitraum)
 	router.GET("/strafen/veranstaltung", strafen_veranstaltung)
+
 	log.Fatal(http.ListenAndServe("localhost:8080", router))
 }
 
@@ -102,6 +104,24 @@ func mitglieder(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	tmpl.Execute(w, mitglieder)
 }
 
+func mitglieder_erstellen(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	r.ParseForm()
+	name := r.PostFormValue("name")
+	vname := r.PostFormValue("vname")
+	nickname := r.PostFormValue("nickname")
+
+	connect_to_db()
+	stmt, err := db.Prepare("INSERT INTO mitglieder (name, vname, nickname) VALUES (?, ?, ?)")
+	if err != nil {
+		log.Printf("Error: %s", err)
+	}
+	_, err = stmt.Exec(name, vname, nickname)
+	if err != nil {
+		log.Printf("Error: %s", err)
+	}
+	db.Close()
+}
+
 func strafen(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	data := Page_date_strafen{get_veranstaltungen(), []Strafe{}}
 	tmpl := template.Must(template.ParseFiles("html/strafen.html"))
@@ -132,11 +152,11 @@ func strafen_erstellen_typ_post(w http.ResponseWriter, r *http.Request, _ httpro
 	connect_to_db()
 	stmt, err := db.Prepare("INSERT INTO strafen_typ (bezeichnung, preis, aktiv) VALUES (?, ?, 1)")
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("Error: %s", err)
 	}
 	_, err = stmt.Exec(bezeichnung, preis)
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("Error: %s", err)
 	}
 	db.Close()
 }
@@ -190,11 +210,11 @@ func strafen_erstellen_mitglied_post(w http.ResponseWriter, r *http.Request, _ h
 	connect_to_db()
 	stmt, err := db.Prepare("INSERT INTO strafen (id_strafe_typ, id_mitglied, preis, datum, anzahl, id_veranstaltung) VALUES (?, ?, ?, ?, ?, ?)")
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("Error: %s", err)
 	}
 	_, err = stmt.Exec(id_strafe_typ, id_mitglied, preis, NewNullString(datum), anzahl, id_veranstaltung)
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("Error: %s", err)
 	}
 	db.Close()
 }
@@ -214,7 +234,7 @@ func get_strafen_typ_fuer_veranstaltung(id_veranstaltung int) []Strafe_typ {
 	var strafen []Strafe_typ
 	rows, err := db.Query("SELECT * FROM strafen_typ WHERE id IN (SELECT id_strafe_typ FROM strafen WHERE id_veranstaltung = ?)", id_veranstaltung)
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("Error: %s", err)
 	}
 	defer rows.Close()
 	for rows.Next() {
@@ -224,7 +244,7 @@ func get_strafen_typ_fuer_veranstaltung(id_veranstaltung int) []Strafe_typ {
 		var aktiv bool
 		err := rows.Scan(&id, &bezeichnung, &preis, &aktiv)
 		if err != nil {
-			log.Fatal(err)
+			log.Printf("Error: %s", err)
 		}
 		strafen = append(strafen, Strafe_typ{id, bezeichnung, preis, aktiv})
 	}
@@ -237,7 +257,7 @@ func get_mitglieder_fuer_veranstaltung(id_veranstaltung int) []Mitglied {
 	var mitglieder []Mitglied
 	rows, err := db.Query("SELECT * FROM mitglieder WHERE id IN (SELECT id_mitglied FROM strafen WHERE id_veranstaltung = ?)", id_veranstaltung)
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("Error: %s", err)
 	}
 	defer rows.Close()
 	for rows.Next() {
@@ -247,7 +267,7 @@ func get_mitglieder_fuer_veranstaltung(id_veranstaltung int) []Mitglied {
 		var nickname string
 		err := rows.Scan(&id, &name, &vname, &nickname)
 		if err != nil {
-			log.Fatal(err)
+			log.Printf("Error: %s", err)
 		}
 		mitglieder = append(mitglieder, Mitglied{id, name, vname, nickname})
 	}
@@ -260,7 +280,7 @@ func get_strafen_fuer_veranstaltung(id_veranstaltung int) []Strafe {
 	strafen := []Strafe{}
 	rows, err := db.Query("SELECT * FROM strafen WHERE id_veranstaltung = ?", id_veranstaltung)
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("Error: %s", err)
 	}
 	defer rows.Close()
 	for rows.Next() {
@@ -273,7 +293,7 @@ func get_strafen_fuer_veranstaltung(id_veranstaltung int) []Strafe {
 		var anzahl float32
 		err := rows.Scan(&id, &id_strafe_typ, &id_mitglied, &preis, &datum, &anzahl, &id_veranstaltung)
 		if err != nil {
-			log.Fatal(err)
+			log.Printf("Error: %s", err)
 		}
 		if datum.Valid {
 			strafen = append(strafen, Strafe{id, id_strafe_typ, id_mitglied, preis, datum.String, anzahl, id_veranstaltung})
@@ -333,7 +353,7 @@ func connect_to_db() {
 	var err error
 	db, err = sql.Open("mysql", cfg.FormatDSN())
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("Error: %s", err)
 	}
 }
 
@@ -343,7 +363,7 @@ func get_mitglieder() []Mitglied {
 	// Query the database.
 	rows, err := db.Query("SELECT * FROM mitglieder")
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("Error: %s", err)
 	}
 	defer rows.Close()
 
@@ -355,7 +375,7 @@ func get_mitglieder() []Mitglied {
 		var nickname string
 		err := rows.Scan(&id, &name, &vname, &nickname)
 		if err != nil {
-			log.Fatal(err)
+			log.Printf("Error: %s", err)
 		}
 		mg = append(mg, Mitglied{id, name, vname, nickname})
 	}
@@ -367,7 +387,7 @@ func get_veranstaltungen() []Veranstaltung {
 	connect_to_db()
 	rows, err := db.Query("SELECT * FROM veranstaltungen")
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("Error: %s", err)
 	}
 	defer rows.Close()
 
@@ -378,7 +398,7 @@ func get_veranstaltungen() []Veranstaltung {
 		var datum string
 		err := rows.Scan(&id, &bezeichnung, &datum)
 		if err != nil {
-			log.Fatal(err)
+			log.Printf("Error: %s", err)
 		}
 		vers = append(vers, Veranstaltung{id, bezeichnung, datum})
 	}
@@ -390,7 +410,7 @@ func get_veranstaltungen_zeitraum(von_datum string, bis_datum string) []Veransta
 	connect_to_db()
 	rows, err := db.Query("SELECT * FROM veranstaltungen WHERE datum BETWEEN ? AND ? ORDER BY datum DESC", von_datum, bis_datum)
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("Error: %s", err)
 	}
 	defer rows.Close()
 
@@ -401,7 +421,7 @@ func get_veranstaltungen_zeitraum(von_datum string, bis_datum string) []Veransta
 		var datum string
 		err := rows.Scan(&id, &bezeichnung, &datum)
 		if err != nil {
-			log.Fatal(err)
+			log.Printf("Error: %s", err)
 		}
 		vers = append(vers, Veranstaltung{id, bezeichnung, datum})
 	}
@@ -419,12 +439,12 @@ func get_strafen(mitgliedid int, von_datum string, bis_datum string) []Strafe {
 	if mitgliedid == 0 {
 		rows, err = db.Query("SELECT * FROM strafen WHERE datum BETWEEN ? AND ?", von_datum, bis_datum)
 		if err != nil {
-			log.Fatal(err)
+			log.Printf("Error: %s", err)
 		}
 	} else {
 		rows, err = db.Query("SELECT * FROM strafen WHERE id_mitglied = ? AND datum BETWEEN ? AND ?", mitgliedid, von_datum, bis_datum)
 		if err != nil {
-			log.Fatal(err)
+			log.Printf("Error: %s", err)
 		}
 	}
 	defer rows.Close()
@@ -438,7 +458,7 @@ func get_strafen(mitgliedid int, von_datum string, bis_datum string) []Strafe {
 		var anzahl float32
 		err := rows.Scan(&id, &id_strafe_typ, &id_mitglied, &preis, &datum, &anzahl, &id_veranstaltung)
 		if err != nil {
-			log.Fatal(err)
+			log.Printf("Error: %s", err)
 		}
 		strafen = append(strafen, Strafe{id, id_strafe_typ, id_mitglied, preis, datum, anzahl, id_veranstaltung})
 	}
@@ -452,7 +472,7 @@ func get_strafen_typen() []Strafe_typ {
 	strafen_typen := []Strafe_typ{}
 	rows, err := db.Query("SELECT * FROM strafen_typ")
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("Error: %s", err)
 	}
 	defer rows.Close()
 	for rows.Next() {
@@ -462,7 +482,7 @@ func get_strafen_typen() []Strafe_typ {
 		var aktiv bool
 		err := rows.Scan(&id, &bezeichnung, &preis, &aktiv)
 		if err != nil {
-			log.Fatal(err)
+			log.Printf("Error: %s", err)
 		}
 		strafen_typen = append(strafen_typen, Strafe_typ{id, bezeichnung, preis, aktiv})
 	}

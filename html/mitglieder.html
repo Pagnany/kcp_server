@@ -1,9 +1,22 @@
 <html>
 <head>
-    <title>Unsere Mitglieder</title>
+	<title>Unsere Mitglieder</title>
+	<script src="https://unpkg.com/htmx.org@1.9.12"></script>
 </head>
 <body>
 	<h1>Unsere Mitglieder</h1>
+	<form hx-post="/mitglieder/erstellen" hx-target="#temp">
+		<label for="vname">Vorname:</label>
+		<input type="text" id="vname" name="vname">
+		<br>
+		<label for="nickname">Spitzname:</label>
+		<input type="text" id="nickname" name="nickname">
+		<br>
+		<label for="name">Nachname:</label>
+		<input type="text" id="name" name="name">
+		<br>
+		<input type="submit" value="Hinzufügen">
+	</form>
 	<table>
 		<tr >
 			<th>ID</th>
@@ -20,5 +33,6 @@
 			</tr>
 		{{end}}
 	</table>
+	<div id="temp"></div>
 </body>
 </html>
