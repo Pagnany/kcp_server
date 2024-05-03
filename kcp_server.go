@@ -19,6 +19,7 @@ type Mitglied struct {
 	Name     string
 	Vname    string
 	Nickname string
+	Anwesen  bool
 }
 
 type Veranstaltung struct {
@@ -62,6 +63,7 @@ func main() {
 	router.POST("/mitglieder/erstellen", mitglieder_erstellen)
 	router.GET("/strafen", strafen)
 	router.GET("/veranstaltungen", veranstaltungen)
+	router.GET("/veranstaltungen/anwesenheit/:id", veranstaltungen_anwesenheit)
 	router.POST("/veranstaltungen/zeitraum", veranstaltungen_zeitraum_post)
 	router.GET("/strafen/erstellen_typ", strafen_erstellen_typ)
 	router.POST("/strafen/erstellen_typ", strafen_erstellen_typ_post)
@@ -73,14 +75,20 @@ func main() {
 	log.Fatal(http.ListenAndServe("localhost:8080", router))
 }
 
+func veranstaltungen_anwesenheit(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	temp := params.ByName("id")
+	fmt.Fprintf(w, temp)
+}
+
 func home(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	tmpl := template.Must(template.ParseFiles("html/home.html"))
 	tmpl.Execute(w, nil)
 }
 
 func veranstaltungen(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	veranstaltungen := get_veranstaltungen()
 	tmpl := template.Must(template.ParseFiles("html/veranstaltungen.html"))
-	tmpl.Execute(w, nil)
+	tmpl.Execute(w, veranstaltungen)
 }
 
 func veranstaltungen_zeitraum_post(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -174,6 +182,7 @@ func strafen_erstellen_mitglied_post(w http.ResponseWriter, r *http.Request, _ h
 	preis := r.PostFormValue("preis")
 	datum := r.PostFormValue("datum")
 	anzahl := r.PostFormValue("anzahl")
+	bezeich := r.PostFormValue("bezeich")
 	id_veranstaltung := r.PostFormValue("veranstaltungen")
 
 	//Abbrechen wenn keine Veranstaltung und kein Datum gesetzt ist
@@ -184,6 +193,11 @@ func strafen_erstellen_mitglied_post(w http.ResponseWriter, r *http.Request, _ h
 	//Abbrechen wenn keine Strafe und Preis	0 ist
 	if id_strafe_typ == "0" && preis == "0" {
 		fmt.Fprintf(w, "FEHLER: Keine Strafe und Preis 0 gesetzt<br>")
+		return
+	}
+	//Abbrechen wenn keine Strafe keine Bezeichnung hat
+	if id_strafe_typ == "0" && bezeich == "" {
+		fmt.Fprintf(w, "FEHLER: Keine Strafe und Bezeichnung leer<br>")
 		return
 	}
 	//Abbrechen wenn Anzahl 0 ist
@@ -197,22 +211,23 @@ func strafen_erstellen_mitglied_post(w http.ResponseWriter, r *http.Request, _ h
 		return
 	}
 
-	// Wenn eine Strafe gesetzt ist, dann brauchen wir keinen Preis
+	// Wenn eine Strafe gesetzt ist, dann brauchen wir keinen Preis und keine Bezeichnung
 	temp, err := strconv.Atoi(id_strafe_typ)
 	if err == nil {
 		if temp > 0 {
 			preis = "0"
+			bezeich = ""
 		}
 	}
 
 	fmt.Fprintf(w, "Mitglied_ID: %s, Strafe_ID: %s, Preis: %s, Datum: %s, Anzahl: %s, Veranstaltung_ID: %s<br>", id_mitglied, id_strafe_typ, preis, datum, anzahl, id_veranstaltung)
 
 	connect_to_db()
-	stmt, err := db.Prepare("INSERT INTO strafen (id_strafe_typ, id_mitglied, preis, datum, anzahl, id_veranstaltung) VALUES (?, ?, ?, ?, ?, ?)")
+	stmt, err := db.Prepare("INSERT INTO strafen (id_strafe_typ, id_mitglied, preis, datum, anzahl, id_veranstaltung, bezeich) VALUES (?, ?, ?, ?, ?, ?, ?)")
 	if err != nil {
 		log.Printf("Error: %s", err)
 	}
-	_, err = stmt.Exec(id_strafe_typ, id_mitglied, preis, NewNullString(datum), anzahl, id_veranstaltung)
+	_, err = stmt.Exec(id_strafe_typ, id_mitglied, preis, NewNullString(datum), anzahl, id_veranstaltung, bezeich)
 	if err != nil {
 		log.Printf("Error: %s", err)
 	}
@@ -269,7 +284,7 @@ func get_mitglieder_fuer_veranstaltung(id_veranstaltung int) []Mitglied {
 		if err != nil {
 			log.Printf("Error: %s", err)
 		}
-		mitglieder = append(mitglieder, Mitglied{id, name, vname, nickname})
+		mitglieder = append(mitglieder, Mitglied{id, name, vname, nickname, false})
 	}
 	db.Close()
 	return mitglieder
@@ -278,7 +293,7 @@ func get_mitglieder_fuer_veranstaltung(id_veranstaltung int) []Mitglied {
 func get_strafen_fuer_veranstaltung(id_veranstaltung int) []Strafe {
 	connect_to_db()
 	strafen := []Strafe{}
-	rows, err := db.Query("SELECT * FROM strafen WHERE id_veranstaltung = ?", id_veranstaltung)
+	rows, err := db.Query("SELECT * FROM strafen WHERE id_strafe_typ != 0 AND id_veranstaltung = ?", id_veranstaltung)
 	if err != nil {
 		log.Printf("Error: %s", err)
 	}
@@ -291,7 +306,8 @@ func get_strafen_fuer_veranstaltung(id_veranstaltung int) []Strafe {
 		var datum sql.NullString
 		var preis float32
 		var anzahl float32
-		err := rows.Scan(&id, &id_strafe_typ, &id_mitglied, &preis, &datum, &anzahl, &id_veranstaltung)
+		var bezeich string
+		err := rows.Scan(&id, &id_strafe_typ, &id_mitglied, &preis, &datum, &anzahl, &id_veranstaltung, &bezeich)
 		if err != nil {
 			log.Printf("Error: %s", err)
 		}
@@ -377,7 +393,7 @@ func get_mitglieder() []Mitglied {
 		if err != nil {
 			log.Printf("Error: %s", err)
 		}
-		mg = append(mg, Mitglied{id, name, vname, nickname})
+		mg = append(mg, Mitglied{id, name, vname, nickname, false})
 	}
 	db.Close()
 	return mg
@@ -456,7 +472,8 @@ func get_strafen(mitgliedid int, von_datum string, bis_datum string) []Strafe {
 		var datum string
 		var preis float32
 		var anzahl float32
-		err := rows.Scan(&id, &id_strafe_typ, &id_mitglied, &preis, &datum, &anzahl, &id_veranstaltung)
+		var bezeich string
+		err := rows.Scan(&id, &id_strafe_typ, &id_mitglied, &preis, &datum, &anzahl, &id_veranstaltung, &bezeich)
 		if err != nil {
 			log.Printf("Error: %s", err)
 		}

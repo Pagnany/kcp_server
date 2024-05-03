@@ -1,0 +1,13 @@
+- Strafen erstellen Anzeige unten schöner machen
+- Strafen löschen
+  - Auch beim Erstellen
+- Strafen Typen inaktiv setzen
+- Strafen von Veranstaltungen in /strafen anzeigen
+
+- Anwesenheit für Veranstaltung setzen und bearbeiten
+
+- Preisliste
+  - Geldstrafen
+  - Summe
+  - Durchschnitt
+  - Nicht Anwesende

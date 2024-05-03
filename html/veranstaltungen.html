@@ -5,14 +5,30 @@
 	</head>
 	<body>
 	    <p>Veranstaltungen</p>
-		<form hx-post="/veranstaltungen/zeitraum" hx-swap="innerHTML" hx-target="#veranstaltungen">
-		    <input type="date" id="von_datum" name="von_datum" placeholder="von Datum">
-		    <input type="date" id="bis_datum" name="bis_datum" placeholder="bis Datum">
-		    <br>
-		    <button>
-			Veranstaltungen anzeigen
-		    </button>
-		</form>
-	    <div id="veranstaltungen"></div>
+		<!-- <form hx-post="/veranstaltungen/zeitraum" hx-swap="innerHTML" hx-target="#veranstaltungen"> -->
+		<!--     <input type="date" id="von_datum" name="von_datum" placeholder="von Datum"> -->
+		<!--     <input type="date" id="bis_datum" name="bis_datum" placeholder="bis Datum"> -->
+		<!--     <br> -->
+		<!--     <button> -->
+		<!-- 	Veranstaltungen anzeigen -->
+		<!--     </button> -->
+		<!-- </form> -->
+	 <!--    <div id="veranstaltungen"></div> -->
+	<table border=1>
+		<tr>
+			<th>Datum</th>
+			<th>Bezeichnung</th>
+			<th>Anwesenheit</th>
+			<th>Strafen</th>
+		</tr>
+		{{range .}}
+			<tr>
+				<td>{{.Datum}}</td>
+				<td>{{.Bezeichnung}}</td>
+				<td>{{.Id}}</td>
+				<td>{{.Id}}</td>
+			</tr>
+		{{end}}
+	</table>
 	</body>
 </html>
