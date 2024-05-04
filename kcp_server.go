@@ -38,6 +38,25 @@ type Strafe struct {
 	Id_veranstaltung int
 }
 
+type Strafen_neu struct {
+	Id                    int
+	Id_strafe_typ         int
+	Preis_strafe_typ      float32
+	Bezeich_strafe_typ    string
+	Id_mitglied           int
+	Vname                 string
+	Name                  string
+	Nickname              string
+	Datum_strafe          string
+	Preis_strafe          float32
+	Aktiv                 bool
+	Anzahl                float32
+	Bezeich_strafe        string
+	Id_veranstaltung      int
+	Datum_veranstaltung   string
+	Bezeich_veranstaltung string
+}
+
 type Strafe_typ struct {
 	Id          int
 	Bezeichnung string
@@ -140,9 +159,9 @@ func strafenzeitraum(w http.ResponseWriter, r *http.Request, _ httprouter.Params
 	r.ParseForm()
 	von_datum := r.PostFormValue("von_datum")
 	bis_datum := r.PostFormValue("bis_datum")
-	data := Page_date_strafen{get_veranstaltungen(), get_strafen(0, von_datum, bis_datum)}
-	for _, strafe := range data.Strafen {
-		fmt.Fprintf(w, "ID: %d, Mitglied: %d, Preis: %f, Datum: %s, Anzahl: %f, Veranstaltung: %d<br>", strafe.Id, strafe.Id_mitglied, strafe.Preis, strafe.Datum, strafe.Anzahl, strafe.Id_veranstaltung)
+	data := get_strafen(0, von_datum, bis_datum)
+	for _, strafe := range data {
+		fmt.Fprintf(w, "Preis: %f<br>", strafe.Preis_strafe_typ)
 	}
 }
 
@@ -445,39 +464,46 @@ func get_veranstaltungen_zeitraum(von_datum string, bis_datum string) []Veransta
 	return vers
 }
 
-func get_strafen(mitgliedid int, von_datum string, bis_datum string) []Strafe {
+func get_strafen(mitgliedid int, von_datum string, bis_datum string) []Strafen_neu {
 	connect_to_db()
-	strafen := []Strafe{}
+	strafen := []Strafen_neu{}
 	// wenn mitgliedid == 0 dann alle mitglieder
-
 	var rows *sql.Rows
 	var err error
 	if mitgliedid == 0 {
-		rows, err = db.Query("SELECT * FROM strafen WHERE datum BETWEEN ? AND ?", von_datum, bis_datum)
+		rows, err = db.Query("select strafen.id, strafen.id_strafe_typ, strafen_typ.preis, strafen_typ.bezeichnung, strafen.id_mitglied, mitglieder.vname, mitglieder.name, mitglieder.nickname, strafen.datum, strafen.preis, strafen_typ.aktiv, strafen.anzahl, strafen.bezeich, strafen.id_veranstaltung, veranstaltungen.datum, veranstaltungen.bezeichnung from strafen left join veranstaltungen on strafen.id_veranstaltung = veranstaltungen.id left join strafen_typ on strafen.id_strafe_typ = strafen_typ.id join mitglieder on strafen.id_mitglied = mitglieder.id WHERE (veranstaltungen.datum BETWEEN ? AND ?) OR (strafen.datum BETWEEN ? AND ?)", von_datum, bis_datum, von_datum, bis_datum)
 		if err != nil {
 			log.Printf("Error: %s", err)
 		}
 	} else {
-		rows, err = db.Query("SELECT * FROM strafen WHERE id_mitglied = ? AND datum BETWEEN ? AND ?", mitgliedid, von_datum, bis_datum)
+		rows, err = db.Query("select strafen.id, strafen.id_strafe_typ, strafen_typ.preis, strafen_typ.bezeichnung, strafen.id_mitglied, mitglieder.vname, mitglieder.name, mitglieder.nickname, strafen.datum, strafen.preis, strafen_typ.aktiv, strafen.anzahl, strafen.bezeich, strafen.id_veranstaltung, veranstaltungen.datum, veranstaltungen.bezeichnung from strafen left join veranstaltungen on strafen.id_veranstaltung = veranstaltungen.id left join strafen_typ on strafen.id_strafe_typ = strafen_typ.id join mitglieder on strafen.id_mitglied = mitglieder.id WHERE (veranstaltungen.datum BETWEEN ? AND ?) OR (strafen.datum BETWEEN ? AND ?) AND strafen.id_mitglied = ?", von_datum, bis_datum, von_datum, bis_datum, mitgliedid)
 		if err != nil {
 			log.Printf("Error: %s", err)
 		}
 	}
 	defer rows.Close()
 	for rows.Next() {
-		var id int
+		var Id int
 		var id_strafe_typ int
+		var preis_strafe_typ sql.NullFloat64
+		var bezeich_strafe_typ sql.NullString
 		var id_mitglied int
-		var id_veranstaltung int
-		var datum string
-		var preis float32
+		var vname string
+		var name string
+		var nickname string
+		var datum_strafe sql.NullString
+		var preis_strafe float32
+		var aktiv sql.NullBool
 		var anzahl float32
-		var bezeich string
-		err := rows.Scan(&id, &id_strafe_typ, &id_mitglied, &preis, &datum, &anzahl, &id_veranstaltung, &bezeich)
+		var bezeich_strafe sql.NullString
+		var id_veranstaltung int
+		var datum_veranstaltung sql.NullString
+		var bezeich_veranstaltung sql.NullString
+		err := rows.Scan(&Id, &id_strafe_typ, &preis_strafe_typ, &bezeich_strafe_typ, &id_mitglied, &vname, &name, &nickname, &datum_strafe, &preis_strafe, &aktiv, &anzahl, &bezeich_strafe, &id_veranstaltung, &datum_veranstaltung, &bezeich_veranstaltung)
 		if err != nil {
 			log.Printf("Error: %s", err)
 		}
-		strafen = append(strafen, Strafe{id, id_strafe_typ, id_mitglied, preis, datum, anzahl, id_veranstaltung})
+		strafen = append(strafen, Strafen_neu{Id, id_strafe_typ, float32(preis_strafe_typ.Float64), bezeich_strafe_typ.String, id_mitglied, vname, name, nickname, datum_strafe.String, preis_strafe, aktiv.Bool, anzahl, bezeich_strafe.String, id_veranstaltung, datum_veranstaltung.String, bezeich_veranstaltung.String})
 	}
 
 	db.Close()
