@@ -161,7 +161,7 @@ func strafenzeitraum(w http.ResponseWriter, r *http.Request, _ httprouter.Params
 	bis_datum := r.PostFormValue("bis_datum")
 	data := get_strafen(0, von_datum, bis_datum)
 	for _, strafe := range data {
-		fmt.Fprintf(w, "Preis: %f<br>", strafe.Preis_strafe_typ)
+		fmt.Fprintf(w, " %s | %f %f<br>", strafe.Datum_veranstaltung, strafe.Preis_strafe, strafe.Preis_strafe_typ)
 	}
 }
 
@@ -351,22 +351,26 @@ func create_strafen_grid(id_veranstaltung int) string {
 		temp := strconv.FormatFloat(float64(strafe.Preis), 'f', 2, 32)
 		grid += "<th> " + strafe.Bezeichnung + " " + temp + "€ </th>"
 	}
+	grid += "<th>Summe</th>"
 	grid += "</tr>"
 	// Zeilen erstellen
 	for _, mitglied := range mitglieder {
+		summe := 0.0
 		grid += "<tr><td>" + mitglied.Name + "</td>"
 		for _, strafe_typ := range strafen_typen {
-			foud := false
+			found := false
 			for _, strafe := range strafen {
 				if strafe.Id_mitglied == mitglied.Id && strafe.Id_strafe_typ == strafe_typ.Id {
 					grid += "<td>" + strconv.FormatFloat(float64(strafe.Anzahl), 'f', 2, 32) + "</td>"
-					foud = true
+					found = true
+					summe += float64(strafe.Anzahl) * float64(strafe_typ.Preis)
 				}
 			}
-			if !foud {
+			if !found {
 				grid += "<td>0</td>"
 			}
 		}
+		grid += "<td>" + strconv.FormatFloat(summe, 'f', 2, 32) + "</td>"
 		grid += "</tr>"
 	}
 

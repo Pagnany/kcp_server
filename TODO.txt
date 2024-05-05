@@ -8,6 +8,5 @@
 
 - Preisliste
   - Geldstrafen
-  - Summe
   - Durchschnitt
   - Nicht Anwesende
