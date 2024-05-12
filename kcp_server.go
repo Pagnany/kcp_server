@@ -36,6 +36,7 @@ type Strafe struct {
 	Datum            string
 	Anzahl           float32
 	Id_veranstaltung int
+	Bezeich          string
 }
 
 type Strafen_neu struct {
@@ -309,6 +310,51 @@ func get_mitglieder_fuer_veranstaltung(id_veranstaltung int) []Mitglied {
 	return mitglieder
 }
 
+func get_freie_strafen_typen_fuer_veranstaltung(id_veranstaltung int) []string {
+	connect_to_db()
+	var strafen []string
+	rows, err := db.Query("select distinct bezeich from strafen where id_strafe_typ = 0 and id_veranstaltung = ?", id_veranstaltung)
+	if err != nil {
+		log.Printf("Error: %s", err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var bezeichnung string
+		err := rows.Scan(&bezeichnung)
+		if err != nil {
+			log.Printf("Error: %s", err)
+		}
+		strafen = append(strafen, bezeichnung)
+	}
+	db.Close()
+	return strafen
+}
+
+func get_freie_strafen_fuer_veranstaltung(id_veranstaltung int) []Strafe {
+	connect_to_db()
+	strafen := []Strafe{}
+	rows, err := db.Query("select id, id_mitglied, preis, bezeich, anzahl from strafen where id_strafe_typ = 0 and id_veranstaltung = ?", id_veranstaltung)
+	if err != nil {
+		log.Printf("Error: %s", err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var id int
+		var id_mitglied int
+		var preis float32
+		var bezeich string
+		var anzahl float32
+		err := rows.Scan(&id, &id_mitglied, &preis, &bezeich, &anzahl)
+		if err != nil {
+			log.Printf("Error: %s", err)
+		}
+		strafen = append(strafen, Strafe{id, 0, id_mitglied, preis, "", anzahl, id_veranstaltung, bezeich})
+	}
+
+	db.Close()
+	return strafen
+}
+
 func get_strafen_fuer_veranstaltung(id_veranstaltung int) []Strafe {
 	connect_to_db()
 	strafen := []Strafe{}
@@ -331,9 +377,9 @@ func get_strafen_fuer_veranstaltung(id_veranstaltung int) []Strafe {
 			log.Printf("Error: %s", err)
 		}
 		if datum.Valid {
-			strafen = append(strafen, Strafe{id, id_strafe_typ, id_mitglied, preis, datum.String, anzahl, id_veranstaltung})
+			strafen = append(strafen, Strafe{id, id_strafe_typ, id_mitglied, preis, datum.String, anzahl, id_veranstaltung, bezeich})
 		} else {
-			strafen = append(strafen, Strafe{id, id_strafe_typ, id_mitglied, preis, "", anzahl, id_veranstaltung})
+			strafen = append(strafen, Strafe{id, id_strafe_typ, id_mitglied, preis, "", anzahl, id_veranstaltung, bezeich})
 		}
 	}
 	db.Close()
@@ -344,12 +390,17 @@ func create_strafen_grid(id_veranstaltung int) string {
 	strafen := get_strafen_fuer_veranstaltung(id_veranstaltung)
 	strafen_typen := get_strafen_typ_fuer_veranstaltung(id_veranstaltung)
 	mitglieder := get_mitglieder_fuer_veranstaltung(id_veranstaltung)
+	freie_strafen_typen := get_freie_strafen_typen_fuer_veranstaltung(id_veranstaltung)
+	freie_strafen := get_freie_strafen_fuer_veranstaltung(id_veranstaltung)
 
 	// Überschriften erstellen
 	grid := "<table border='1'><tr><th>Mitglied</th>"
 	for _, strafe := range strafen_typen {
 		temp := strconv.FormatFloat(float64(strafe.Preis), 'f', 2, 32)
 		grid += "<th> " + strafe.Bezeichnung + " " + temp + "€ </th>"
+	}
+	for _, strafe := range freie_strafen_typen {
+		grid += "<th> " + strafe + " </th>"
 	}
 	grid += "<th>Summe</th>"
 	grid += "</tr>"
@@ -368,6 +419,19 @@ func create_strafen_grid(id_veranstaltung int) string {
 			}
 			if !found {
 				grid += "<td>0</td>"
+			}
+		}
+		for _, strafe_typ := range freie_strafen_typen {
+			found := false
+			for _, strafe := range freie_strafen {
+				if strafe.Id_mitglied == mitglied.Id && strafe.Bezeich == strafe_typ {
+					grid += "<td>" + strconv.FormatFloat(float64(strafe.Preis), 'f', 2, 32) + "€</td>"
+					found = true
+					summe += float64(strafe.Anzahl) * float64(strafe.Preis)
+				}
+			}
+			if !found {
+				grid += "<td>0€</td>"
 			}
 		}
 		grid += "<td>" + strconv.FormatFloat(summe, 'f', 2, 32) + "</td>"
