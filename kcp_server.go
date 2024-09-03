@@ -434,7 +434,7 @@ func create_strafen_grid(id_veranstaltung int) string {
 				grid += "<td>0€</td>"
 			}
 		}
-		grid += "<td>" + strconv.FormatFloat(summe, 'f', 2, 32) + "</td>"
+		grid += "<td>" + strconv.FormatFloat(summe, 'f', 2, 32) + "€</td>"
 		grid += "</tr>"
 	}
 

@@ -24,7 +24,7 @@
 				<tr>
 					<td>{{.Id}}</td>
 					<td>{{.Bezeichnung}}</td>
-					<td>{{.Preis}}</td>
+					<td>{{printf "%.2f" .Preis}}€</td>
 					<td>{{.Aktiv}}</td>
 				</tr>
 			{{end}}

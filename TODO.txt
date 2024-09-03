@@ -1,12 +1,20 @@
-- Strafen erstellen Anzeige unten schöner machen
+Vorgang Strafen eintragen:
+1. Veranstaltung anlegen/auswählen
+  - Namen und Datum vergeben(Muss nicht immer Kegeln sein)
+2. Wer war anwesend/abwesend
+  - Grid mit Checkboxen
+4. Strafen mit Strafentyp eintragen
+  - Reihenfolge?
+    - Erst alle Strafentypen für eine Person?
+    - Erst alle Personen für einen Strafentyp?
+5. Preisstrafen eintragen (30-60-90, Spielstrafen)
+  - pro Veranstaltung Preisstrafen-Namen erstellen
+  - diese Namen müssen dann für jeden Anwesenden ausgefüllt werden
+6. Durchschnitt für nicht Anwesende
+7. Summe für Kegelabend
+
 - Strafen löschen
   - Auch beim Erstellen
 - Strafen Typen inaktiv setzen
-- Strafen von Veranstaltungen in /strafen anzeigen
-
+- Strafen Ordnung beim eintragen und in der Übersicht bearbeiten können
 - Anwesenheit für Veranstaltung setzen und bearbeiten
-
-- Preisliste
-  - Geldstrafen
-  - Durchschnitt
-  - Nicht Anwesende
