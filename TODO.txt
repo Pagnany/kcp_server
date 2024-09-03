@@ -3,6 +3,7 @@ Vorgang Strafen eintragen:
   - Namen und Datum vergeben(Muss nicht immer Kegeln sein)
 2. Wer war anwesend/abwesend
   - Grid mit Checkboxen
+  - (Abwesend aber nicht Durchschnitt?)
 4. Strafen mit Strafentyp eintragen
   - Reihenfolge?
     - Erst alle Strafentypen für eine Person?
@@ -13,6 +14,7 @@ Vorgang Strafen eintragen:
 6. Durchschnitt für nicht Anwesende
 7. Summe für Kegelabend
 
+Funktionen:
 - Strafen löschen
   - Auch beim Erstellen
 - Strafen Typen inaktiv setzen
